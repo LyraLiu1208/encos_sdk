@@ -303,14 +303,25 @@ def create_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用示例:
-  %(prog)s scan                          # 扫描电机
-  %(prog)s zero 1                        # 设置电机1零点
-  %(prog)s pos 1 90                      # 电机1转到90度
-  %(prog)s pos 1 -45 200 3.0 --mode servo  # 高级位置控制
-  %(prog)s vel 1 100 2.0                 # 电机1速度100RPM
-  %(prog)s status 1                      # 获取电机1状态
-  %(prog)s monitor 1 --interval 0.1      # 监控电机1
-  %(prog)s config --list                 # 显示配置
+  %(prog)s --interface socketcan --channel can0 scan          # 扫描电机
+  %(prog)s --interface pcan --channel PCAN_USBBUS1 scan       # 使用PCAN接口
+  %(prog)s zero 1                                            # 设置电机1零点
+  %(prog)s pos 1 90                                          # 电机1转到90度
+  %(prog)s pos 1 -45 200 3.0 --mode servo                    # 高级位置控制
+  %(prog)s vel 1 100 2.0                                     # 电机1速度100RPM
+  %(prog)s status 1                                          # 获取电机1状态
+  %(prog)s monitor 1 --interval 0.1                          # 监控电机1
+  %(prog)s config --list                                     # 显示配置
+
+CAN接口类型:
+  socketcan    - Linux SocketCAN接口 (默认)
+  pcan         - Peak PCAN接口  
+  vector       - Vector接口
+  kvaser       - Kvaser接口
+  
+常见通道名称:
+  socketcan: can0, can1, vcan0
+  pcan: PCAN_USBBUS1, PCAN_USBBUS2
         """
     )
     

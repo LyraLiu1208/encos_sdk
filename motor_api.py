@@ -38,18 +38,41 @@ class Motor:
     状态监控、错误处理等。每个Motor实例对应一个物理电机。
     """
     
-    def __init__(self, motor_id: int, can_hardware: CANHardware):
+    def __init__(self, motor_id: int, can_hardware: Optional[CANHardware] = None, **can_kwargs):
         """初始化电机控制实例
+        
+        可以直接传入 CANHardware 实例，或通过关键字参数创建新的 CANHardware。
         
         Args:
             motor_id: 电机ID (1-32)
-            can_hardware: CAN硬件接口
+            can_hardware: (可选) 已存在的 CANHardware 实例
+            **can_kwargs: (可选) 用于创建 CANHardware 的参数
+                        如: interface='socketcan', channel='can0', bitrate=1000000
+        
+        Examples:
+            # 方式1: 使用现有的CANHardware
+            motor = Motor(1, can_hardware=my_can_hw)
+            
+            # 方式2: 自动创建CANHardware
+            motor = Motor(1, interface='socketcan', channel='can0')
         """
         if not (1 <= motor_id <= 32):
             raise ValueError("电机ID必须在1-32范围内")
         
         self.motor_id = motor_id
-        self.can_hardware = can_hardware
+        
+        # 灵活的CAN硬件初始化
+        if can_hardware is not None:
+            self.can_hardware = can_hardware
+            self._owns_can_hardware = False  # 不负责关闭
+        elif can_kwargs:
+            self.can_hardware = CANHardware(**can_kwargs)
+            if not self.can_hardware.connect():
+                raise RuntimeError(f"无法连接CAN硬件: {can_kwargs}")
+            self._owns_can_hardware = True  # 负责关闭
+        else:
+            raise ValueError("必须提供 can_hardware 实例或用于创建它的参数 (如 interface, channel)")
+        
         self.encoder = ProtocolEncoder()
         self.decoder = ProtocolDecoder()
         
@@ -78,7 +101,10 @@ class Motor:
         """析构函数，清理资源"""
         try:
             self.can_hardware.remove_message_callback(self._on_can_message)
-        except:
+            # 如果我们拥有CAN硬件，负责关闭它
+            if hasattr(self, '_owns_can_hardware') and self._owns_can_hardware:
+                self.can_hardware.disconnect()
+        except Exception:
             pass
     
     def set_zero_point(self, timeout: float = 2.0) -> bool:
@@ -367,6 +393,27 @@ class MotorManager:
         self.can_hardware = can_hardware
         self.motors: Dict[int, Motor] = {}
         self.logger = logging.getLogger("MotorManager")
+    
+    @classmethod
+    def create_from_scan(cls, can_hardware: CANHardware, auto_add: bool = True) -> "MotorManager":
+        """通过扫描总线创建MotorManager并自动添加检测到的电机
+        
+        Args:
+            can_hardware: CAN硬件接口
+            auto_add: 是否自动将扫描到的电机添加到管理器
+            
+        Returns:
+            MotorManager: 包含已检测电机的管理器实例
+        """
+        manager = cls(can_hardware)
+        motor_ids = manager.scan_motors()
+        
+        if auto_add and motor_ids:
+            manager.logger.info(f"自动添加 {len(motor_ids)} 个检测到的电机: {motor_ids}")
+            for motor_id in motor_ids:
+                manager.add_motor(motor_id)
+        
+        return manager
     
     def add_motor(self, motor_id: int) -> Motor:
         """添加电机

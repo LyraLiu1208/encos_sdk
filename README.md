@@ -165,38 +165,6 @@ python cli_tool.py -v monitor 1
 - **参数限制**: 设置合理的位置、速度、电流安全限制
 - **应急停止**: 随时准备切断电源
 
-## 测试和开发
-
-### 运行测试
-
-```bash
-# 基本功能测试 (无需硬件)
-python test_sdk.py
-
-# 运行示例代码
-python examples.py
-```
-
-### 开发指南
-
-1. **模拟硬件**: 使用`MockCANHardware`进行无硬件开发
-2. **日志调试**: 设置`logging.basicConfig(level=logging.DEBUG)`查看详细信息
-3. **错误处理**: 所有API都有适当的错误处理和返回值检查
-4. **扩展协议**: 在`protocol_layer.py`中添加新的指令编码/解码函数
-
-### 自定义配置
-
-```python
-# 自定义安全限制
-motor.max_position_deg = 180.0
-motor.max_velocity_rpm = 500.0
-motor.max_current_a = 5.0
-
-# 自定义协议参数
-from encos_sdk.data_types import ProtocolConstants
-ProtocolConstants.HEARTBEAT_TIMEOUT_MS = 1000  # 修改心跳超时
-```
-
 ## API参考
 
 ### 主要类

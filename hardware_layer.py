@@ -222,7 +222,7 @@ class CANHardware:
             try:
                 bus_stats = self.bus.get_stats()
                 stats.update(bus_stats)
-            except:
+            except Exception:
                 pass
                 
         return stats
@@ -235,45 +235,3 @@ class CANHardware:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """上下文管理器支持"""
         self.disconnect()
-
-
-class MockCANHardware(CANHardware):
-    """模拟CAN硬件 (用于测试)
-    
-    提供一个不需要真实硬件的CAN接口，方便开发和测试。
-    """
-    
-    def __init__(self):
-        super().__init__(interface='mock', channel='mock0')
-        self._mock_responses = {}
-    
-    def connect(self) -> bool:
-        """模拟连接"""
-        self.is_connected = True
-        self.logger.info("模拟CAN总线连接成功")
-        return True
-    
-    def disconnect(self):
-        """模拟断开"""
-        self.is_connected = False
-        self.logger.info("模拟CAN总线断开")
-    
-    def send_frame(self, frame: CANFrame, timeout: float = 1.0) -> bool:
-        """模拟发送"""
-        if not self.is_connected:
-            return False
-        
-        self.logger.debug(f"模拟发送: ID=0x{frame.arbitration_id:03X}, Data={frame.data.hex().upper()}")
-        
-        # 检查是否有预设的响应
-        response_key = (frame.arbitration_id, bytes(frame.data))
-        if response_key in self._mock_responses:
-            response_frame = self._mock_responses[response_key]
-            # 延迟一点时间模拟真实响应
-            threading.Timer(0.01, lambda: self._receive_queue.put(response_frame)).start()
-        
-        return True
-    
-    def set_mock_response(self, request_id: int, request_data: bytes, response_frame: CANFrame):
-        """设置模拟响应"""
-        self._mock_responses[(request_id, request_data)] = response_frame

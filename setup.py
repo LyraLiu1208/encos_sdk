@@ -7,9 +7,6 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r", encoding="utf-8") as fh:
-    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
-
 setup(
     name="encos_sdk",
     version="1.0.0",
@@ -36,19 +33,10 @@ setup(
         "Topic :: Scientific/Engineering",
     ],
     python_requires=">=3.7",
-    install_requires=requirements,
-    extras_require={
-        "dev": [
-            "pytest>=6.0",
-            "pytest-cov>=2.0",
-            "black>=21.0",
-            "flake8>=3.8",
-            "mypy>=0.800",
-        ],
-        "cli": [
-            "colorama>=0.4.6",
-        ],
-    },
+    install_requires=[
+        "python-can>=4.0.0",
+        "colorama>=0.4.6",
+    ],
     entry_points={
         "console_scripts": [
             "encos-cli=encos_sdk.cli_tool:main",

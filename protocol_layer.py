@@ -28,6 +28,28 @@ except ImportError:
     )
 
 
+def _validate_range(value: float, min_val: float, max_val: float, param_name: str):
+    """验证参数是否在有效范围内
+    
+    Args:
+        value: 要检验的值
+        min_val: 最小值
+        max_val: 最大值  
+        param_name: 参数名称(用于错误信息)
+        
+    Raises:
+        ValueError: 当值超出范围时
+    """
+    if not (min_val <= value <= max_val):
+        raise ValueError(f"{param_name} ({value}) 超出允许范围 [{min_val}, {max_val}]")
+
+
+def _validate_motor_id(motor_id: int):
+    """验证电机ID是否有效"""
+    if not (1 <= motor_id <= 32):
+        raise ValueError(f"电机ID ({motor_id}) 必须在1-32范围内")
+
+
 class ProtocolEncoder:
     """CAN协议编码器
     
@@ -56,8 +78,7 @@ class ProtocolEncoder:
         Returns:
             CANFrame: 重置ID的CAN帧
         """
-        if not (1 <= new_id <= 32):
-            raise ValueError("电机ID必须在1-32范围内")
+        _validate_motor_id(new_id)
         
         return CANFrame(
             arbitration_id=0x000,
@@ -74,6 +95,7 @@ class ProtocolEncoder:
         Returns:
             CANFrame: 设置零点的CAN帧
         """
+        _validate_motor_id(motor_id)
         return CANFrame(
             arbitration_id=motor_id,
             data=bytes([0x55, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
@@ -146,10 +168,13 @@ class ProtocolEncoder:
         Returns:
             CANFrame: 伺服位置指令的CAN帧
         """
+        # 参数验证
+        _validate_motor_id(motor_id)
+        _validate_range(position, -360.0 * 256, 360.0 * 256, "目标位置")
+        _validate_range(speed_limit, 0, 30000, "速度限制")
+        _validate_range(current_limit, 0, 50.0, "电流限制")
         # 转换为协议格式
         pos_bytes = float_to_bytes(math.radians(position))  # 度转弧度
-        speed_bytes = float_to_bytes(speed_limit)
-        current_bytes = float_to_bytes(current_limit)
         
         # 构造数据 (前4字节位置，后4字节速度和电流各2字节)
         data = bytearray(8)
